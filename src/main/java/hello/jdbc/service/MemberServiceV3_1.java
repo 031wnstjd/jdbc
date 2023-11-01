@@ -51,14 +51,4 @@ public class MemberServiceV3_1 {
         }
     }
 
-    private void release(Connection con) {
-        if (con != null) {
-            try {
-                con.setAutoCommit(true); // 보통 AutoCommit 모드가 디폴트이므로 커넥션 풀에 반환 전에 true로 설정
-                con.close();
-            } catch (Exception e) {
-                log.info("error", e);
-            }
-        }
-    }
 }
