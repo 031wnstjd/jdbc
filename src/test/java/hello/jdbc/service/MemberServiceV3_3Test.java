@@ -60,6 +60,7 @@ class MemberServiceV3_3Test {
 
         @Bean
         MemberServiceV3_3 memberServiceV3_3() {
+            // MemberServiceV3_3 클래스 내부에 @Transactional이 존재하므로 스프링 컨테이너가 띄워질 때, 프록시 객체가 빈으로 등록됨
             return new MemberServiceV3_3(memberRepositoryV3());
         }
     }
