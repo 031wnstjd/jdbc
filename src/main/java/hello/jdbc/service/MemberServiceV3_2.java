@@ -7,33 +7,34 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * 트랜잭션 - 트랜잭션 매니저 (connection 전달, 리소스 반환 등의 문제를 알아서 처리해 줌 - 내부적으로 트랜잭션 동기화 매니저 사용)
+ * 트랜잭션 - 트랜잭션 템플릿 (반복되는 트랜잭션 시작, commit 또는 rollback 구조를 템플릿화)
  */
 @Slf4j
-@RequiredArgsConstructor
-public class MemberServiceV3_1 {
+public class MemberServiceV3_2 {
 
-    private final PlatformTransactionManager transactionManager;
+    private final TransactionTemplate txTemplate;
     private final MemberRepositoryV3 memberRepository;
 
-    public void accountTransfer(String fromId, String toId, int money) throws SQLException {
-        // 트랜잭션 시작
-        TransactionStatus status = transactionManager.getTransaction(new DefaultTransactionDefinition());
+    public MemberServiceV3_2(PlatformTransactionManager transactionManager, MemberRepositoryV3 memberRepository) {
+        this.txTemplate = new TransactionTemplate(transactionManager); // TransactionTemplate을 사용하기 위해서는 TransactionManager가 필요
+        this.memberRepository = memberRepository;
+    }
 
-        try {
-            // 비즈니스 로직
-            bizLogic(fromId, toId, money);
-            transactionManager.commit(status); // 성공시 커밋
-        } catch (Exception e) {
-            transactionManager.rollback(status); // 실패시 롤백
-            throw new IllegalStateException(e);
-        }
-
+    public void accountTransfer(String fromId, String toId, int money) {
+        txTemplate.executeWithoutResult(status -> {
+            // 비즈니스 로직 (bizLogic에서 체크 예외인 SQLException을 던지므로 어쩔 수 없이 try-catch 사용)
+            try {
+                bizLogic(fromId, toId, money);
+            } catch (SQLException e) {
+                throw new IllegalStateException(e); // 람다에서는 체크 예외를 밖으로 던질 수 없기 때문에 언체크 예외로 바꾸어 던지도록 예외 전환
+            }
+        });
     }
 
     private void bizLogic(String fromId, String toId, int money) throws SQLException {
